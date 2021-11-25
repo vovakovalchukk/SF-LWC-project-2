@@ -5,7 +5,7 @@ import { refreshApex } from '@salesforce/apex';
 import searchContacts from '@salesforce/apex/ContactController.searchContacts';
 
 const COLUMNS = [
-    { label: 'First Name', fieldName: 'FirstName', type: 'text' },
+    { label: 'First Name', fieldName: 'FirstName', type: 'text', },
     { label: 'Last Name', fieldName: 'LastName', type: 'text' },
     { label: 'Email', fieldName: 'Email', type: 'email' },
     { label: 'Account Name', fieldName: 'AccountLink', type: 'url', typeAttributes: { 
@@ -36,17 +36,17 @@ export default class Contacts extends LightningElement {
 
     wiredContactResult;
     searchTerm = '';
-    contacts;
-    error;
+    @track contacts;
+    @track error;
 
     recordId;
 
     @wire(searchContacts, { searchTerm: '$searchTerm' })
     imperativeWiring(result) {
         this.wiredContactResult = result;
-        if(result.data) {
-            this.contacts = result.data;
-            this.contacts = this.contacts.map(function(item) {
+        const { data, error } = result; // destructure the provisioned value    
+        if(data) {
+            this.contacts = data.map(function(item) {
                 return {
                     'Id' : item.Id,
                     'FirstName' : item.FirstName,
@@ -59,6 +59,10 @@ export default class Contacts extends LightningElement {
                 }
             });
         }
+    }
+    handleLogACall() {
+        // Use the value to refresh wiredGetActivityHistory().
+        return refreshApex(this.wiredContactResult);
     }
     
     @track showModalCreateContact = false;
@@ -83,7 +87,10 @@ export default class Contacts extends LightningElement {
     }
 
     handleSearch() {
-        this.searchTerm = this.template.querySelector('.slds-var-m-bottom_small').value;
+        refreshApex(this.wiredContactResult)
+        .then(() => {
+            this.searchTerm = this.template.querySelector('.slds-var-m-bottom_small').value;
+        });
     }
 
     handleRowAction(event) {
@@ -92,7 +99,7 @@ export default class Contacts extends LightningElement {
     }
 
     refreshApexData() {
-        return refreshApex(this.wiredContactResult);
+        refreshApex(this.wiredContactResult);
     }
 
     get errors() {
